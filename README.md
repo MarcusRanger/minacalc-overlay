@@ -6,6 +6,10 @@ Tosu overlay + MinaCalc difficulty sidecar for **osu!mania**.
 - Rust binary polls tosu’s HTTP endpoints and writes `msd.json`.
 - Overlay (`overlay/*`) renders those values.
 
+
+https://github.com/user-attachments/assets/1552f8d5-651f-4be9-a67f-9c4fbcea7742
+
+
 ## Quick start
 
 ```bash
