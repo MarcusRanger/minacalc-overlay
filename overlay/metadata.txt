@@ -1,0 +1,8 @@
+Usecase: View 4-key difficulty with MinaCalc(Etterna)
+Name:   MinaCalc on osu! (mania)
+Version: 1.1
+Author:  YOUR_NAME
+CompatibleWith:gosu, tosu, streamCompanion
+Resolution: 600x600
+authorLinks: https://github.com/YOUR_USERNAME/minacalc-overlay
+Notes: some markdown text

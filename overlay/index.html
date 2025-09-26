@@ -1,0 +1,109 @@
+<!doctype html>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="./style.css" />
+
+<div class="card">
+  <div class="row" data-id="song"><span class="label">Song</span><span id="song" class="value">—</span></div>
+  <div class="row" data-id="diff"><span class="label">Diff</span><span id="diff" class="value">—</span></div>
+  <div class="row" data-id="rate"><span class="label">Rate</span><span id="rate" class="value">—</span></div>
+
+  <hr class="sep" />
+
+  <div class="row" data-id="overall"><span class="label">Overall</span><span id="overall" class="value">—</span></div>
+  <div class="row" data-id="stamina"><span class="label">Stamina</span><span id="stamina" class="value">—</span></div>
+  <div class="row" data-id="jumpstream"><span class="label">Jumpstream</span><span id="jumpstream" class="value">—</span></div>
+  <div class="row" data-id="handstream"><span class="label">Handstream</span><span id="handstream" class="value">—</span></div>
+  <div class="row" data-id="stream"><span class="label">Stream</span><span id="stream" class="value">—</span></div>
+  <div class="row" data-id="chordjack"><span class="label">Chordjack</span><span id="chordjack" class="value">—</span></div>
+  <div class="row" data-id="jacks"><span class="label">Jacks</span><span id="jacks" class="value">—</span></div>
+  <div class="row" data-id="technical"><span class="label">Technical</span><span id="technical" class="value">—</span></div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+
+// 1) Optional: live labels from Tosu WS for snappy updates
+(function connectWS(){
+  const ws = new WebSocket("ws://127.0.0.1:24050/websocket/v2"); // standard WebSocket API
+  ws.onmessage = (ev) => {
+    try {
+      const v = JSON.parse(ev.data);
+      const artist  = v?.beatmap?.artist || "";
+      const title   = v?.beatmap?.title  || "";
+      const version = v?.beatmap?.version || "";
+      $("#song").textContent = (artist || title) ? `${artist} - ${title}` : "Unknown Song";
+      $("#diff").textContent = version || "—";
+    } catch {}
+  };
+  ws.onclose = () => setTimeout(connectWS, 1000);
+})();
+
+// 2) Color mapping: 0 → green, 18+ → red (clamped)
+// 0..19: green->red, 19..25: hold red, 26..30: red->purple (magenta ~300°)
+function colorForMSD(x) {
+  const v = Math.max(0, Math.min(30, Number(x) || 0)); // clamp 0..30
+  let hue, sat = 80, light;
+
+  if (v <= 19) {
+    // green(120°) -> red(0°)
+    const t = v / 19;
+    hue   = 120 * (1 - t);
+    light = 65 - 10 * t;              // slightly darker as it rises
+  } else if (v <= 23) {
+    // danger band: solid red
+    hue   = 0;
+    light = 52;
+  } else {
+    // 26..30: red(0°) -> purple(300°) taking the short path backwards (0 → 360 → 300)
+    const t = (v - 23) / (30 - 23);   // 0 at 24, 1 at 30
+    hue   = 360 - 60 * Math.max(0, Math.min(1, t)); // 360→300
+    light = 52 - 6 * t;               // darken a touch toward purple
+  }
+
+  return `hsl(${hue.toFixed(0)} ${sat}% ${light.toFixed(0)}%)`; // MDN hsl() syntax
+}
+
+// Keep your existing gradient fill: we just change the target stops and the max
+function updateMetric(id, val) {
+  const row = document.querySelector(`.row[data-id="${id}"]`);
+  const el  = document.getElementById(id);
+
+  const num = Number(val);
+  if (!isFinite(num)) {
+    el.textContent = "—";
+    row?.style.removeProperty("--pct");
+    row?.style.removeProperty("--color");
+    return;
+  }
+  el.textContent = num.toFixed(2);
+
+  // Fill percent now scales to 30
+  const pct = Math.max(0, Math.min(1, num / 30)) * 100;
+  row?.style.setProperty("--pct", `${pct}%`);
+  row?.style.setProperty("--color", colorForMSD(num));
+}
+
+// 3) Poll the JSON written by your Rust sidecar
+async function tick(){
+  try {
+    const r = await fetch("./msd.json", { cache: "no-store" });
+    if (r.ok) {
+      const j = await r.json();
+      $("#song").textContent = j.song || $("#song").textContent;
+      $("#diff").textContent = j.diff || $("#diff").textContent;
+      $("#rate").textContent = j.rate ? `${parseFloat(j.rate).toFixed(2)}x` : "—";
+
+      updateMetric("overall",    j.overall);
+      updateMetric("stamina",    j.stamina);
+      updateMetric("jumpstream", j.jumpstream);
+      updateMetric("handstream", j.handstream);
+      updateMetric("stream",     j.stream);
+      updateMetric("chordjack",  j.chordjack);
+      updateMetric("jacks",      j.jacks);
+      updateMetric("technical",  j.technical);
+    }
+  } catch {}
+  setTimeout(tick, 200);
+}
+tick();
+</script>
