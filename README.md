@@ -2,6 +2,7 @@
 
 Tosu overlay + MinaCalc difficulty sidecar for **osu!mania**.
 
+[MSD](https://community.etternaonline.com/t/what-is-msd/2265)(Mina Standardized Difficulty) is a comprehensive 4-key difficulty standard. Use this overlay to get a better picture of the mania-beatmap difficulty.
 - Rust binary polls tosu’s HTTP endpoints and writes `msd.json`.
 - Overlay (`overlay/*`) renders those values.
 
